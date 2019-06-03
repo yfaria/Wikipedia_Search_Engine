@@ -21,19 +21,27 @@ protected:
 
   int valor(char c) {
     /**************************
-    -1 se nao esta no alfabeto:
+     Provavelmente tem jeito melhor de fazer isso, mas é o que temos pra hoje.
+     Não parece ter solução tão trivial pra trabalhar com caracteres que usam
+     mais de um byte e não são UTF8 (a maior parte das soluções simples exigem
+     algum recurso externo).
+     O mais próximo foi com o uso de wstring e o wfstream; mas deu errado pois,
+     por razões desconhecidas, quando ele encara algo fora do alfabeto ascii,
+     ele para de ler ; empaca. A sugestão mais simples foi trata-los
+     com força bruta; que é o feito
 
-    'A', 'a', 'À', 'Á', 'Â', 'Ã', 'Ä', 'Å',  'à', 'á', 'â', 'ã', 'ä', 'å' -> 0; a
-    'ç', 'Ç', 'c', 'C' -> 2; c
-    'd', 'D', 'Ð', 'ð' -> 3; d
-    'e', 'è', 'é', 'ê', 'ë', 'E', 'É', 'È', 'É', 'Ê', 'Ë', 'Æ', 'æ' -> 4; e    
-    'i', 'ì', 'í', 'î', 'ï', 'I', 'Ì', 'Í', 'Î', 'Ï' -> 8; i
-    'n', 'ñ', 'N', 'Ñ' -> 13; n
-    'o', 'ò', 'ó', 'ô', 'õ', 'ö', 'O', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö' -> 14; o
-    's', 'š', 'S', 'Š' -> 18; s
-    'u', 'ù', 'ú', 'û', 'ü', 'U', 'Ú', 'Ù', 'Û', 'Ü' -> 20; u
-    'y', 'ý', 'ÿ', 'Y', 'Ý', 'Ÿ' -> 24;y
-    'z', 'ž', 'Z', 'Ž' -> 25;z
+    -1 se nao esta no alfabeto:
+    'À', 'Á', 'Â', 'Ã', 'Ä', 'Å',  'à', 'á', 'â', 'ã', 'ä', 'å' -> 0; a
+    'ç', 'Ç' -> 2; c
+    'Ð', 'ð' -> 3; d
+    'è', 'é', 'ê', 'ë', 'É', 'È', 'É', 'Ê', 'Ë', 'Æ', 'æ' -> 4; e    
+    'ì', 'í', 'î', 'ï', 'Ì', 'Í', 'Î', 'Ï' -> 8; i
+    'ñ', 'Ñ' -> 13; n
+    'ò', 'ó', 'ô', 'õ', 'ö', 'Ò', 'Ó', 'Ô', 'Õ', 'Ö' -> 14; o
+    'š', 'Š' -> 18; s
+    'ù', 'ú', 'û', 'ü', 'Ú', 'Ù', 'Û', 'Ü' -> 20; u
+    'ý', 'ÿ', 'Ý', 'Ÿ' -> 24;y
+    'ž', 'Ž' -> 25;z
     Os outros caracteres do alfabeto terão valores normais.
     Os demais especiais serão -1.
 
@@ -47,92 +55,137 @@ protected:
       return (x - 65);
     else if ((x <= 57) && (x >= 48)) //dígitos de 0 a 9
       return (x-12);
-    else if ((x >= 192 && x <= 197) || (x >= 224 && x <= 229)) //diferentes A's
-      return 0;
-    else if (x==199 || x==201) //ç
-      return 2;
-    else if (x==208 || x==240) //ð
-      return 3;
-    else if ((x >= 200 && x <= 203) || (x >= 232 && x <= 235) ||
-	     (x == 198) || (x == 230)) //diferentes E's
-      return 4;
-    else if ((x >= 204 && x <= 207) || (x >= 236 && x <= 239)) //diferentes I's
-      return 8;
-    else if (x==209 || x==241) //ñ
-      return 13;
-    else if ((x >= 210 && x <= 214) || (x >= 242 && x <= 246)) //diferentes O's
-      return 14;
-    else if (x==352 || x==353) //š
-      return 18;
-    else if ((x >= 217 && x <= 220) || (x >= 249 && x <= 252)) //diferentes U's
-      return 20;
-    else if ((x == 221) || (x == 253) || (x == 376) || (x==255)) //diferentes Y's
-      return 23;
-    else if (x == 381 || x == 382) //ž
-      return 24;
-    else // demais símbolos
+    else if (x == -59 || x == -61) //o próx símbolo talvez seja lido
+      return x;
+    else //demais símbolos.
       return -1;
+  }
+  
+  int valor(int x, char c2) {
+    /**************************
+    Os que vem do ISO 8859-1 são da forma x = -61 e c2 = n;
+    Do ISO 8859-15 são x = -59 e c2 = n;
+    **************************/
+    int y = c2;
+    
+    if (x == -61) {
+      if ((x >= -96 && x <= -91) || (x >= -128 && x <= -123)) //diferentes A's
+	return 0;
+      else if (x == -89 || x == -121) //ç
+	return 2;
+      else if (x == -112 || x == -80) //ð
+	return 3;
+      else if ((x >= -88 && x <= 85) || (x >= -120 && x <= -117)|| //diferentes E's
+	       (x == -90) || (x == -122)) //æ e Æ
+	return 4;
+      else if ((x >= -84 && x <= -81) || (x >= -116 && x <= -113)) //diferentes I's
+	return 8;
+      else if (x == -79 || x == -111) //ñ
+	return 13;
+      else if ((x >= -78 && x <= -74) || (x >= -110 && x <= -106)) //diferentes O's
+	return 14;
+      else if ((x >= -71  && x <= -68) || (x >= -103 && x <= -100)) //diferentes U's
+	return 20;
+      else if ((x == -67) || (x == -65) || (x == -99) || (x==-72)) //diferentes Y's
+	return 23;
+      else // demais símbolos
+	return -1;
+    } else { //x = -59 ou qualquer coisa fora que apareça ao acaso
+      if (x == -95 || x == -96) //š
+	return 18;
+      else if (x == -66 || x == -67) //ž
+	return 24;
+      else if (x == -72) //Ÿ
+	return 23;
+      else
+	return -1;
+    }  
   }
     
 public:
-    
-  void addword(std::wstring word, int index) {
+  
+  void addword(std::string word, int index) {
     Node* pNode;
     pNode = pRoot;
-    int x;
-    for (std::wstring::iterator it = word.begin(); it != word.end(); ++it) {
+    int x, y;
+    for (std::string::iterator it = word.begin(); it != word.end(); ++it) {
       //se o no da i-esima letra nao existe, cria
       x = valor(*it);
-      if (x != -1) {
+      if (x >= 0) {
 	if (!(pNode->pChilds[x]))
 	  pNode->pChilds[x] = new Node();
 	pNode = pNode->pChilds[x];
       }
-      /*
-      if (!(pNode->pChilds[valor(*(palavra + i))])) {
-	//testar : pNode->pChilds[valor(*(palavra + i))] = new Node();
-	Node* pNo = new Node();
-	pNode->pChilds[valor(*(palavra + i))] = pNo;
-      }
-      pNode = pNode->pChilds[valor(*(palavra + i))];
-      */
+      else if (x != -1) {
+	++it;
+	y = valor(x, *it);
+	if (!(pNode->pChilds[y]))
+	  pNode->pChilds[y] = new Node();
+	pNode = pNode->pChilds[y];
+      }	
     }
-
     //ao fim do for; pNode sera ponteiro ao no
     //da palavra a ser adicionada.
+    
+    //Antes de colocar o índice,
+    //precisamos verificar se o index já está no nó.
     if (!(pNode->indexes).empty())
       if ((pNode->indexes).back() == index)
 	return;
     (pNode->indexes).push_back(index);
   }
     
-  //Node** find1(char* palavra, int len,){}
-
-  bool find2(char* palavra, int len){
-    Node* pNode;
-    pNode = pRoot;
-    for (int i = 0; i<len; i++) {
-      if (!(pNode->pChilds[valor(*(palavra + i))]))
-	return false;
-      else
-	pNodxe = pNode->pChilds[valor(*(palavra + i))];
+  std::vector<int> query (std::string word) {
+    //A query é bem parecida com a inserção, só que em vez de criar um novo nó
+    //quando ele não é achado; é para retornar um vetor vazio.
+    Node* pNode = pRoot;
+    int x, y;
+    for (std::string::iterator it = word.begin(); it != word.end(); ++it) {
+      x = valor(*it);
+      if (x >= 0) {
+	if (!(pNode->pChilds[x])) {
+	  std::cout << "Não há essa palavra nos artigos \n";
+	  std::vector<int> z;
+	  return z;
+	}
+	pNode = pNode->pChilds[x];
+      } else if (x != -1) {
+	++it;
+	y = valor(x, *it); // só pode ser >=0 ou -1
+	if (y >= 0) {
+	  if (!(pNode->pChilds[y])) {
+	    std::cout << "Não há essa palavra nos artigos \n";
+	    std::vector<int> z;
+	    return z;
+	  }
+	  pNode = pNode->pChilds[y]; 
+	} else {
+	  std::cout << "Não há essa palavra nos artigos \n";
+	  std::vector<int> z;
+	  return z;
+	}
+      } else { //x == -1
+	std::cout << "Não há essa palavra nos artigos \n";
+	  std::vector<int> z;
+	  return z;
+      }
     }
-    return true;
+    return pNode->indexes;
   }
-    
-  /*void query() {
-
-    }*/
+  
 }; 
 
 int main () {
-  //Trie teste;
+  Trie teste;
   int index;
   std::string s;
   std::string word;
-  std::fstream arquivo ("englishText_0_10000");
+  std::fstream arquivo ("/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/englishText_0_10000");
   
   //PEGANDO UM ARQUIVO:
+  if (arquivo.is_open())
+    std::cout << "AbRIL";
+  
   while (getline(arquivo,s)) {
     for (std::string::iterator it = s.begin(); it != s.end(); ++it){
       if (*it == ' ') {
@@ -148,7 +201,7 @@ int main () {
     //refaz o caso do espaço ao final.
     std::cout << word << '\n';
     word.clear();
-    std::cout << "\n\n\n PROXIMA LINHA \n\n\n";
+    //std::cout << "\n\n\n PROXIMA LINHA \n\n\n";
   }
   
   std::cout << "iai\n";
