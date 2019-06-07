@@ -1,7 +1,7 @@
 class Node {
 public:
   Node* pChilds[36]; //testar com 26.
-  std::vector<int> indexes; //talvez substituir por linked list.
+  std::vector<int> indexes;
   Node() {
     for (int i=0; i<36; i++)
       pChilds[i] = nullptr;
@@ -49,7 +49,7 @@ protected:
     else if ((x <=90) && (x >= 65)) //A:65;  Z:90
       return (x - 65);
     else if ((x <= 57) && (x >= 48)) //dígitos de 0 a 9
-      return (x-12);
+      return (x-22);
     else if (x == -59 || x == -61) //o próx símbolo talvez seja lido
       return x;
     else //demais símbolos.
@@ -64,59 +64,91 @@ protected:
     int y = c2;
     
     if (x == -61) {
-      if ((x >= -96 && x <= -91) || (x >= -128 && x <= -123)) //diferentes A's
+      if ((y >= -96 && y <= -91) || (y >= -128 && y <= -123)) //diferentes A's
 	return 0;
-      else if (x == -89 || x == -121) //ç
+      else if (y == -89 || y == -121) //ç
 	return 2;
-      else if (x == -112 || x == -80) //ð
+      else if (y == -112 || y == -80) //ð
 	return 3;
-      else if ((x >= -88 && x <= 85) || (x >= -120 && x <= -117)|| //diferentes E's
-	       (x == -90) || (x == -122)) //æ e Æ
+      else if ((y >= -88 && y <= -85) || (y >= -120 && y <= -117)|| //diferentes E's
+	       (y == -90) || (y == -122)) //æ e Æ
 	return 4;
-      else if ((x >= -84 && x <= -81) || (x >= -116 && x <= -113)) //diferentes I's
+      else if ((y >= -84 && y <= -81) || (y >= -116 && y <= -113)) //diferentes I's
 	return 8;
-      else if (x == -79 || x == -111) //ñ
+      else if (y == -79 || y == -111) //ñ
 	return 13;
-      else if ((x >= -78 && x <= -74) || (x >= -110 && x <= -106)) //diferentes O's
+      else if ((y >= -78 && y <= -74) || (y >= -110 && y <= -106)||
+	       (y==-72) || (y == -104))//diferentes O's
 	return 14;
-      else if ((x >= -71  && x <= -68) || (x >= -103 && x <= -100)) //diferentes U's
+      else if ((y >= -71  && y <= -68) || (y >= -103 && y <= -100)) //diferentes U's
 	return 20;
-      else if ((x == -67) || (x == -65) || (x == -99) || (x==-72)) //diferentes Y's
-	return 23;
+      else if ((y == -67) || (y == -65) || (y == -99) || (y==-72)) //diferentes Y's
+	return 24;
       else // demais símbolos
 	return -1;
     } else { //x = -59 ou qualquer coisa fora que apareça ao acaso
-      if (x == -95 || x == -96) //š
+      if (y == -95 || y == -96) //š
 	return 18;
-      else if (x == -66 || x == -67) //ž
+      else if (y == -66 || y == -67) //ž
+	return 25;
+      else if (y == -72) //Ÿ
 	return 24;
-      else if (x == -72) //Ÿ
-	return 23;
+      else if (y == 108 || y==109 || y==107 || y==115 || y == 44 || y==0) //Å
+	return 0;
+      else if (y == 102) //Ø
+	return 14;
       else
 	return -1;
     }  
   }
     
 public:
+  Trie () {
+    pRoot = new Node();
+  }
+
+
+  std::vector<int> intersection(std::vector<int> docs1, std::vector<int> docs2) {
+    //Nossa árvore foi constuída de modo que indices dos vetores estejam
+    //ordenados; requisito desse algoritmo.
+    std::vector<int>::iterator it1, it2;
+    std::vector<int> vec;
+    it1 = docs1.begin();
+    it2 = docs2.begin();
+    while (it1 != docs1.end() && it2 != docs2.end()) {
+      if (*it1 > *it2)
+	it2++;
+      else if (*it2 < *it1)
+	it1++;
+      else
+	vec.push_back(*it1);
+    }
+  }
   
   void addword(std::string word, int index) {
     Node* pNode;
     pNode = pRoot;
-    int x, y;
+    int x;
     for (std::string::iterator it = word.begin(); it != word.end(); ++it) {
-      //se o no da i-esima letra nao existe, cria
+       //se o no da i-esima letra nao existe, cria
       x = valor(*it);
       if (x >= 0) {
-	if (!(pNode->pChilds[x]))
+	if (pNode->pChilds[x] == nullptr)
 	  pNode->pChilds[x] = new Node();
 	pNode = pNode->pChilds[x];
-      }
-      else if (x != -1) {
+      } else if (x != -1) { 
+	//std::cout << "simbolo\n";
+	//std::cout << word << '\n';
 	++it;
+	int y = *it;
+	//std::cout << x << " e " << y << "\n\n\n";
 	y = valor(x, *it);
-	if (!(pNode->pChilds[y]))
-	  pNode->pChilds[y] = new Node();
-	pNode = pNode->pChilds[y];
+	//std::cout << y << "\n\n\n\n\n\n";
+	if (y > 0) {
+	  if (pNode->pChilds[y] == nullptr)
+	    pNode->pChilds[y] = new Node();
+	  pNode = pNode->pChilds[y];
+	}
       }	
     }
     //ao fim do for; pNode sera ponteiro ao no
@@ -124,17 +156,26 @@ public:
     
     //Antes de colocar o índice, precisamos verificar
     //se o index já está no nó ou se o nó é o root.
-    if (!(pNode->indexes).empty() || pNode == pRoot)
-      if ((pNode->indexes).back() == index || pNode == pRoot)
+    if (pNode == pRoot)
+      return;
+    
+    if (!(pNode->indexes).empty())
+      if ((pNode->indexes).back() == index){
+	//std::cout << word << " já colocado\n";
 	return;
+      }
+
     (pNode->indexes).push_back(index);
+    (pNode->indexes).reserve((pNode->indexes).size());
   }
     
-  std::vector<int> query (std::string word) {
+  std::vector<int> query_oneword (std::string word) {
     //A query é bem parecida com a inserção, só que em vez de criar um novo nó
     //quando ele não é achado; é para retornar um vetor vazio.
+
+    //Esse query só serve para uma palavra 
     Node* pNode = pRoot;
-    int x, y;
+    int x;
     for (std::string::iterator it = word.begin(); it != word.end(); ++it) {
       x = valor(*it);
       if (x >= 0) {
@@ -145,6 +186,7 @@ public:
 	}
 	pNode = pNode->pChilds[x];
       } else if (x != -1) {
+	int y;
 	++it;
 	y = valor(x, *it); // só pode ser >=0 ou -1
 	if (y >= 0) {
@@ -161,11 +203,29 @@ public:
 	}
       } else { //x == -1
 	std::cout << "Não há essa palavra nos artigos \n";
-	  std::vector<int> z;
-	  return z;
+	std::vector<int> z;
+	return z;
       }
     }
     return pNode->indexes;
   }
+
+  std::vector<int> query (std::string s) {
+    std::string word;
+    std::vector<int> vec;
+    for (std::string::iterator it = s.begin(); it != s.end(); ++it) {
+      if (*it == ' ' ||*it == '-' ||*it == '.'||*it == ',' || *it == ';'|| *it == ':'||*it == '?'|| *it == '!') {
+	if (vec.empty())
+	  vec = query_oneword(word);
+	else
+	  vec = intersection(vec, query_oneword(word));
+	word.clear();
+      } else {
+	word += *it;
+      }
+    }
+    return vec;
+  }
+
   
 }; 
