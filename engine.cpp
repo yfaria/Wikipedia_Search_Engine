@@ -7,7 +7,7 @@
 #include "trie.hpp"
 
 int main () {
-  std::ios::sync_with_stdio(false);
+  std::ios::sync_with_stdio(false); //para deixar os iostreams mais rápidos.
   std::cout << "Carregando ... ";
   Trie trie;
   std::fstream serial ("serial_trie");
@@ -46,6 +46,8 @@ int main () {
       } else if (user_r == "v" || user_r == "V") {
 	if (j>0)
 	  j--;
+      } else if (user_r == "n" || user_r == "N") {
+	std::cout << "ok \n\n";
       } else {
 	int ent = 0;
 	for (std::string::iterator it = user_r.begin(); it != user_r.end(); it++) {
@@ -59,6 +61,7 @@ int main () {
 	    user_r = "n";
 	  } else {
 	    trie.display(pags[ent - 1 + 20*j]);
+	    std::cout << "\n\n";
 	    user_r = "n";
 	  }
       }
