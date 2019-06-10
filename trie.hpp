@@ -1,6 +1,81 @@
+int getIndex (std::string tag) {
+  //Pega a string tag que é da forma
+  //<doc id="x" title="s1" nonfiltered="z" processed="y" dbindex="a" len="w">
+  //retorna o a.
+
+  std::string::iterator it = tag.end();
+  while (*it != ' ')
+    --it;
+  --it;
+  --it;
+  int x = 0;
+  int i = 1;
+  while (*it != '"'){
+    x += (*it - 48) * i; // o 48 é que os dígitos vão de 48 a 57 em ASCII
+    i *= 10;
+    --it;
+  }
+  return x;
+}
+
+int getLen (std::string tag) {
+  //Pega a string tag que é da forma
+  //<doc id="x" title="s1" nonfiltered="z" processed="y" dbindex="a" len="w">
+  //retorna o w.
+  std::string::iterator it = tag.end();
+  while (*it != '"')
+    --it;
+  --it;
+  int x = 0;
+  int i = 1;
+  while (*it != '"'){
+    x += (*it - 48) * i; // o 48 é que os dígitos vão de 48 a 57 em ASCII
+    i *= 10;
+    --it;
+  }
+  return x;
+}
+
+std::string getTitle (int index) {
+  //Dado um índice, acha o título do documento com esse título.
+  //Faz a busca no arquivo dele.
+  std::fstream file;
+  std::stringstream ss;
+  ss << "/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/englishText_";
+  ss << index - (index%10000) << "_" << index - (index%10000) + 10000  << "(conv)";
+  file.open(ss.str());
+  //std::cout << ss.str() << "\n";
+  std::string s;
+  int ind;
+  std::string title;
+  while (getline(file,s)) { //na condicão do while
+    ind = getIndex(s); //s sempre estará numa tag.
+    int linhas = getLen(s);
+    if (ind != index) {
+      for (int i = 0; i < linhas; i++)
+	getline(file,s); 
+    } else { // Achou a tag, que está armazenada em s.
+      std::string::iterator it = s.begin();
+      while (*it != ' ') //precisa andar dois espaços para chegar em title.
+	it++; // O primeiro separa doc de id.
+      it++;
+      while (*it != ' ') // o segundo id de title.
+	it++;
+      std::advance(it, 8); // para it apontar para primeira letra do titulo.
+      while (*it != '"') {
+	title.push_back(*it);
+	it++;
+      }
+      return title;
+    }
+  }
+  return "";
+}
+  
+
 class Node {
 public:
-  Node* pChilds[36]; //testar com 26.
+  Node* pChilds[36];
   std::vector<int> indexes;
   Node() {
     for (int i=0; i<36; i++)
@@ -111,18 +186,21 @@ public:
   std::vector<int> intersection(std::vector<int> docs1, std::vector<int> docs2) {
     //Nossa árvore foi constuída de modo que indices dos vetores estejam
     //ordenados; requisito desse algoritmo.
-    std::vector<int>::iterator it1, it2;
+    std::vector<int>::iterator it1 = docs1.begin();
+    std::vector<int>::iterator it2 = docs2.begin();
     std::vector<int> vec;
-    it1 = docs1.begin();
-    it2 = docs2.begin();
     while (it1 != docs1.end() && it2 != docs2.end()) {
-      if (*it1 > *it2)
+      if (*it1 > *it2) {
 	it2++;
-      else if (*it2 < *it1)
+      } else if (*it2 > *it1) {
 	it1++;
-      else
+      } else {
 	vec.push_back(*it1);
+	it1++;
+	it2++;
+      }
     }
+    return vec;
   }
   
   void addword(std::string word, int index) {
@@ -180,7 +258,7 @@ public:
       x = valor(*it);
       if (x >= 0) {
 	if (!(pNode->pChilds[x])) {
-	  std::cout << "Não há essa palavra nos artigos \n";
+	  std::cout << "Não encontrado nos artigos \n";
 	  std::vector<int> z;
 	  return z;
 	}
@@ -213,10 +291,12 @@ public:
   std::vector<int> query (std::string s) {
     std::string word;
     std::vector<int> vec;
+    bool multi_w = false;
     for (std::string::iterator it = s.begin(); it != s.end(); ++it) {
       if (*it == ' ' ||*it == '-' ||*it == '.'||*it == ',' || *it == ';'|| *it == ':'||*it == '?'|| *it == '!') {
-	if (vec.empty())
-	  vec = query_oneword(word);
+	multi_w = true; //se a string tem várias palavras;
+	if (vec.empty())//achamos os índices das palavras
+	  vec = query_oneword(word); // e fazemos as interseções
 	else
 	  vec = intersection(vec, query_oneword(word));
 	word.clear();
@@ -224,8 +304,87 @@ public:
 	word += *it;
       }
     }
+    if (!(multi_w)) //se iterou em toda a string e era somente uma palavra
+      vec = query_oneword(word); //busca essa palavra.
+    else
+      vec = intersection(vec, query_oneword(word));
     return vec;
   }
 
+  void serial_rec (Node* pNode, std::fstream& file , char fonte) {
+    if (pNode) {
+      file << fonte << "(";
+      for (std::vector<int>::iterator it = pNode->indexes.begin(); it != pNode->indexes.end(); it++) 
+	file << *it << ",";
+      file << ")";
+      for (int i = 0; i < 35; i++){
+	//char c = "abcdefghijklmnopqrstuvwxyz0123456789"[i];
+	serial_rec(pNode->pChilds[i], file, "abcdefghijklmnopqrstuvwxyz0123456789"[i]);
+      }
+      file << "$";
+    }
+  }
   
+  void serialize (std::fstream& file) {
+    Node* pNode;
+    for (int i = 0; i < 35; i++){
+      pNode = pRoot->pChilds[i];
+      char c = "abcdefghijklmnopqrstuvwxyz0123456789"[i];
+      serial_rec(pNode, file, c);
+    }
+  }
+
+  void deserialize (std::fstream& file) {
+    //Nossa serialização retorna um arquivo de uma linha só.
+    Node* pNode;
+    std::string arq;
+    std::string word;
+    //int x = 0;
+    int index = 0;
+    getline(file, arq);
+    for (std::string::iterator it = arq.begin(); it != arq.end(); it++) {
+      if (*it != '(' && *it != '$') {
+	word += *it;
+      } else if (*it == '(') {
+	it++;
+	while (*it != ')') {
+	  if (*it != ',') {
+	    index = (*it - 48) + 10*index;
+	  } else { //chega na vírgula.
+	    addword(word, index);
+	    index = 0;
+	  }
+	  it++;
+	}
+      } else { //*it == '$'
+	word.pop_back();
+      }
+    }
+  }
+
+  void display (int index) {
+    std::fstream file;
+    std::stringstream ss;
+    ss << "/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/englishText_";
+    ss << index - (index%10000) << "_" << index - (index%10000) + 10000  << "(conv)";
+    file.open(ss.str());
+    //std::cout << ss.str() << "\n";
+    std::string s;
+    int ind;
+    while (getline(file,s)) { //na condicão do while
+      ind = getIndex(s); //s sempre estará numa tag.
+      int linhas = getLen(s);
+      if (ind != index) {
+	for (int i = 0; i < linhas; i++) //ao final desse for
+	  getline(file,s); //o getline vai estar no </doc>
+      } else { //aí o while volta pra uma tag doc.
+	for (int i = 0; i < (linhas-2); i++) { //Como as duas ultimas linhas
+	  getline(file,s); //são ENDOFARTICLE e </doc>, não precisa ler.
+	  std::cout << s << "\n";
+	}
+	file.close();
+	return;
+      }
+    }
+  }
 }; 

@@ -2,46 +2,11 @@
 //um conjunto com os db_index dos elementos 
 #include <iostream>
 #include <vector>
+#include <sstream>
 #include <fstream>
 #include "trie.hpp"
 
-int getIndex (std::string tag) {
-  //Pega a string tag que é da forma
-  //<doc id="x" title="s1" nonfiltered="z" processed="y" dbindex="a" len="w">
-  //retorna o a.
 
-  //std::setlocale(LC_ALL,"");
-  std::string::iterator it = tag.end();
-  while (*it != ' ')
-    --it;
-  --it;
-  --it;
-  int x = 0;
-  int i = 1;
-  while (*it != '"'){
-    x += (*it - 48) * i; // o 48 é que os dígitos vão de 48 a 57 em ASCII
-    i *= 10;
-    --it;
-  }
-  return x;
-}
-
-int getLen (std::string tag) {
-  //Pega a string tag que é da forma
-  //<doc id="x" title="s1" nonfiltered="z" processed="y" dbindex="a" len="w">
-  //retorna o w.
-  std::string::iterator it = tag.end();
-  while (*it != '"')
-    --it;
-  int x = 0;
-  int i = 1;
-  while (*it != '"'){
-    x += (*it - 48) * i; // o 48 é que os dígitos vão de 48 a 57 em ASCII
-    i *= 10;
-    --it;
-  }
-  return x;
-}
 
 int main () {
   Trie teste;
@@ -52,9 +17,11 @@ int main () {
   std::string word;
   int index;
 
+  std::cout << "Carregando...";
+  
   while (getline(names, s)) {
     file.open("/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/" + s +"(conv)");
-    std::cout << "lendo arquivo " << s << "\n";
+    //std::cout << "lendo arquivo " << s << "\n";
     while (getline(file, s1)) {
       if (s1.substr(0,4) == "<doc") {
 	index = getIndex(s1);
@@ -75,7 +42,8 @@ int main () {
     file.close();
   }
   word.clear();
-  std::cout << "Entra qualquer coisa ai\n";
+  std::cout << "pronto! \n";
+  std::cout << "O que deseja procurar? (depois, vou tentar serializar)\n";
   getline(std::cin, word);
   std::vector<int> vec;
   vec = teste.query(word);
@@ -83,5 +51,9 @@ int main () {
   for (std::vector<int>::iterator it = vec.begin(); it != vec.end(); ++it)
     std::cout << *it << " ";
   std::cout << "\n\n";
+  //std::fstream file2;
+  //file2.open("serial_test");
+  //teste.serialize(file2);
+  
   return 0;
 } 
