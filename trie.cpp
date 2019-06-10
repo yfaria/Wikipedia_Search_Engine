@@ -1,14 +1,14 @@
-//A ideia eh o no ter um array aos vizinhos e
-//um conjunto com os db_index dos elementos 
 #include <iostream>
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <chrono>
 #include "trie.hpp"
 
 
 
 int main () {
+  //Aqui, a trie é construida e serializada.
   Trie teste;
   std::ifstream names("files");
   std::ifstream file;
@@ -16,14 +16,16 @@ int main () {
   std::string s1;
   std::string word;
   int index;
+  int docs = 0;
 
   std::cout << "Carregando...";
-  
+  auto t0 = std::chrono::high_resolution_clock::now();
   while (getline(names, s)) {
     file.open("/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/" + s +"(conv)");
     //std::cout << "lendo arquivo " << s << "\n";
     while (getline(file, s1)) {
       if (s1.substr(0,4) == "<doc") {
+	docs++;
 	index = getIndex(s1);
       } else {
 	if (s1.substr(0,5) != "</doc" && s1.substr(0,5) != "ENDOF"){
@@ -42,18 +44,15 @@ int main () {
     file.close();
   }
   word.clear();
+  std::chrono::duration<double> dt = std::chrono::high_resolution_clock::now() - t0;
   std::cout << "pronto! \n";
-  std::cout << "O que deseja procurar? (depois, vou tentar serializar)\n";
-  getline(std::cin, word);
-  std::vector<int> vec;
-  vec = teste.query(word);
-  std::cout << "mo " << word << "\n\n";
-  for (std::vector<int>::iterator it = vec.begin(); it != vec.end(); ++it)
-    std::cout << *it << " ";
-  std::cout << "\n\n";
-  //std::fstream file2;
-  //file2.open("serial_test");
-  //teste.serialize(file2);
-  
+  std::cout << "Foram indexados " << docs << " artigos em " << dt.count() <<" segundos\n\n";
+  std::cout << "Agora, serializando ...\n";
+  t0 = std::chrono::high_resolution_clock::now();
+  std::fstream file2;
+  file2.open("serial_trie");
+  teste.serialize(file);
+  dt = std::chrono::high_resolution_clock::now() - t0;
+  std::cout << "Isso durou " << dt.count() << " segundos.\n";
   return 0;
 } 

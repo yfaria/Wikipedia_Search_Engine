@@ -11,16 +11,20 @@ int main () {
   std::cout << "Carregando ... ";
   Trie trie;
   std::fstream serial ("serial_trie");
+  auto t0 = std::chrono::high_resolution_clock::now(); 
   trie.deserialize(serial);
   serial.close();
+  std::chrono::duration<double> dt = std::chrono::high_resolution_clock::now() - t0;
   std::cout << "pronto\n\n";
+  std::cout << "A serialização levou " << dt.count() << " segundos. \n\n";
+
   
   while (true) {
     std::string s;
     std::cout << "O que deseja buscar?\n";
     getline(std::cin, s); 
     std::vector<int> pags;
-    auto t0 = std::chrono::high_resolution_clock::now();
+    t0 = std::chrono::high_resolution_clock::now();
     pags = trie.query(s);
     std::chrono::duration<double> dt = std::chrono::high_resolution_clock::now() - t0;
     std::cout << "... Um total de " << pags.size() << " páginas (cerca de "
@@ -60,7 +64,10 @@ int main () {
 	  if (ent > 20 || ent < 0) {
 	    user_r = "n";
 	  } else {
+	    std::cout << "\n\n";
+	    std::cout << "------------------------------------------------------------------------------------------------\n";
 	    trie.display(pags[ent - 1 + 20*j]);
+	    std::cout << "------------------------------------------------------------------------------------------------\n";
 	    std::cout << "\n\n";
 	    user_r = "n";
 	  }

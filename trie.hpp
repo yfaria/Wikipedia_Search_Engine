@@ -41,7 +41,7 @@ std::string getTitle (int index) {
   //Faz a busca no arquivo dele.
   std::fstream file;
   std::stringstream ss;
-  ss << "/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/englishText_";
+  ss << "wiki_files/englishText_";
   ss << index - (index%10000) << "_" << index - (index%10000) + 10000  << "(conv)";
   file.open(ss.str());
   //std::cout << ss.str() << "\n";
@@ -49,6 +49,7 @@ std::string getTitle (int index) {
   int ind;
   std::string title;
   while (getline(file,s)) { //na condicão do while
+    //std::cout << s << "\n";
     ind = getIndex(s); //s sempre estará numa tag.
     int linhas = getLen(s);
     if (ind != index) {
@@ -317,7 +318,7 @@ public:
       for (std::vector<int>::iterator it = pNode->indexes.begin(); it != pNode->indexes.end(); it++) 
 	file << *it << ",";
       file << ")";
-      for (int i = 0; i < 35; i++){
+      for (int i = 0; i < 36; i++){
 	//char c = "abcdefghijklmnopqrstuvwxyz0123456789"[i];
 	serial_rec(pNode->pChilds[i], file, "abcdefghijklmnopqrstuvwxyz0123456789"[i]);
       }
@@ -327,7 +328,7 @@ public:
   
   void serialize (std::fstream& file) {
     Node* pNode;
-    for (int i = 0; i < 35; i++){
+    for (int i = 0; i < 36; i++){
       pNode = pRoot->pChilds[i];
       char c = "abcdefghijklmnopqrstuvwxyz0123456789"[i];
       serial_rec(pNode, file, c);
@@ -365,7 +366,7 @@ public:
   void display (int index) {
     std::fstream file;
     std::stringstream ss;
-    ss << "/home/gambitura/EDA/Wikipedia_Search_Engine/wiki_files/englishText_";
+    ss << "wiki_files/englishText_";
     ss << index - (index%10000) << "_" << index - (index%10000) + 10000  << "(conv)";
     file.open(ss.str());
     //std::cout << ss.str() << "\n";
