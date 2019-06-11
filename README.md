@@ -8,6 +8,10 @@ Project of Data Structures and Algorithms (EDA)
 
 You can compile the engine by yourself; it's the file engine.cpp
 
+A video explaining the work is [this](https://youtu.be/Oe5BwuJcyUU)
+
+To use, you must unzip [this](https://drive.google.com/open?id=1KO26qevOJV0zXWZuFsWTu5Gd8jL8vuLm) on the folder with all those files; it's important to maint it there and it's name.
+
 ```
 g++ engine.cpp -std=c++11 -o engine
 ```
